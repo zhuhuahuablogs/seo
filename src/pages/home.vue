@@ -68,7 +68,7 @@
                       </el-col>
                       <el-col :span="6">
                         <div class="wktotal">
-                          <span>挖矿总数：{{item.wktotal}} POKER</span>
+                          <span>挖矿总数：{{item.wktotal}}</span>
                           <p>≈ 1234.4567 EOS</p>
                         </div>
                       </el-col>
@@ -363,6 +363,19 @@
 <script type="text/javascript">
 import EOS from "eosjs";
 import BackTop from "@/m/back-top/back-top";
+const statsList = [{
+    code: 'betdicetoken',
+    symbol: 'DICE'
+  },
+  {
+    code: 'eoseventoken',
+    symbol: 'SVN'
+  },
+  {
+    code: 'luckymetoken',
+    symbol: 'ROLL'
+  }
+]
 export default {
   name: "home",
   data() {
@@ -486,7 +499,7 @@ export default {
       miningList: [{
           type: "DICE",
           recommend: "124.4567", // 推荐返利
-          wktotal: "12334.4567", // 挖矿总数 POKER
+          wktotal: 0, // 挖矿总数 
           determined: "22324.4567", // 游戏盈亏EOS
           signal: false, // 脚本运行状态
           totalResult: "4820", // 总局数
@@ -513,7 +526,7 @@ export default {
         {
           type: "SVN",
           recommend: "124.4567",
-          wktotal: "12334.4567",
+          wktotal: 0,
           determined: "22324.4567",
           signal: true,
           totalResult: "4820",
@@ -540,7 +553,7 @@ export default {
         {
           type: "ROLL",
           recommend: "124.4567",
-          wktotal: "12334.4567",
+          wktotal: 0,
           determined: "22324.4567",
           signal: true,
           totalResult: "4820",
@@ -612,12 +625,10 @@ export default {
     };
   },
   mounted() {
-    
+
   },
   methods: {
     login() {
-      this.getCurrencyStats();
-      return
       let isChrome = navigator.userAgent.indexOf("Chrome") > -1 && navigator.userAgent.indexOf("Safari") > -1;
       if (!isChrome) {
         this.$notify.error({
@@ -663,7 +674,7 @@ export default {
               //   _this.getAccount();
               // }, 2000);
 
-              // _this.getCurrencyBalance(res.account_name,'eoseventoken','SVN');
+              _this.getCurrencyBalance(res.account_name);
               // _this.getCurrencyBalance(res.account_name,'betdicetoken','DICE');
 
             }).catch(err => {
@@ -672,6 +683,8 @@ export default {
                 message: "检查账号出错,请确认EOS账号是否正确"
               });
             });
+
+            _this.getCurrencyStats();
 
           },
           function(error) {
@@ -689,43 +702,45 @@ export default {
         });
       });
     },
-    getCurrencyBalance(account, code, symbol) {
-      this.eos.getCurrencyBalance({
-          account: account,
-          code: code,
-          symbol: symbol // EOS
-        })
-        .then(res => {
-          console.log(`获取成功：${JSON.stringify(res)}`);
-        }).catch(err => {
-          console.log(err)
-        });
-    },
-    getCurrencyStats() {
-      const stats = [{
-          code: 'betdicetoken',
-          symbol: 'DICE'
-        },
-        {
-          code: 'eoseventoken',
-          symbol: 'SVN'
-        },
-        {
-          code: 'luckymetoken',
-          symbol: 'ROLL'
-        }
-      ]
+    getCurrencyBalance(account) {
       for (let index = 0; index < this.miningList.length; index++) {
-        if (stats[index].symbol == this.miningList[index].type) {
+        if (statsList[index].symbol == this.miningList[index].type) {
 
-          this.eos.getCurrencyStats({
-              code: stats[index].code,
-              symbol: stats[index].symbol
+          this.eos.getCurrencyBalance({
+              account:account,
+              code: statsList[index].code,
+              symbol: statsList[index].symbol
             })
             .then(res => {
-              // console.log(`获取成功：${JSON.stringify(res)}`);
-              console.log(`${stats[index].symbol}---${JSON.stringify(res)}`)
-              this.miningList[index].currencySupply = res[stats[index].symbol].supply
+              this.miningList[index].wktotal = res[0] || `0 ${statsList[index].symbol}`
+            }).catch(err => {
+              console.log(err)
+            });
+        }
+      }
+      // this.eos.getCurrencyBalance({
+      //     account: account,
+      //     code: code,
+      //     symbol: symbol // EOS
+      //   })
+      //   .then(res => {
+      //     console.log(res[0]);
+      //     console.log(`获取成功：${JSON.stringify(res)}`);
+      //   }).catch(err => {
+      //     console.log(err)
+      //   });
+    },
+    getCurrencyStats() {
+      for (let index = 0; index < this.miningList.length; index++) {
+        if (statsList[index].symbol == this.miningList[index].type) {
+
+          this.eos.getCurrencyStats({
+              code: statsList[index].code,
+              symbol: statsList[index].symbol
+            })
+            .then(res => {
+              console.log(`${statsList[index].symbol}---${JSON.stringify(res)}`)
+              this.miningList[index].currencySupply = res[statsList[index].symbol].supply
             }).catch(err => {
               console.log(err)
             });
@@ -854,10 +869,10 @@ export default {
         broadcast: true,
         sign: true
       };
-      console.log(data)
-      console.log(account)
-      console.log(transactionOptions)
-      return
+      // console.log(data)
+      // console.log(account)
+      // console.log(transactionOptions)
+      // return
       this.eos.transfer(account.name, data.to, data.quantity, data.memo, transactionOptions).then(trx => {
         console.log(`${new Date()} 交易ID: ${trx.transaction_id}`);
       }).catch(error => {
